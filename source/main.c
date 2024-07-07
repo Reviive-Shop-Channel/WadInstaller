@@ -6,6 +6,8 @@
 #include <gccore.h>
 #include <unistd.h>
 #include <wiiuse/wpad.h>
+#include <fat.h>
+#include <curl/curl.h>
 
 static u32 *xfb;
 static GXRModeObj *rmode;
@@ -31,8 +33,39 @@ void Initialise() {
 
 
 int main() {
- 
+	CURL *curl;
+    FILE *file;
+    CURLcode res;
 	Initialise();
+	fatInitDefault();
+    
+    char *url = "https://raw.githubusercontent.com/OpenShopChannel/WSC-Patcher/main/.gitignore";
+    char *destination = "sd:/.gitignore";
+
+    curl = curl_easy_init();
+    if (curl) {
+        file = fopen(destination, "wb");
+        if (file) {
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+
+            res = curl_easy_perform(curl);
+
+            if (res != CURLE_OK) {
+                fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            } else {
+                printf("File downloaded successfully\n");
+            }
+
+            fclose(file);
+        } else {
+            fprintf(stderr, "Could not open file for writing\n");
+        }
+
+        curl_easy_cleanup(curl);
+    } else {
+        fprintf(stderr, "Failed to initialize curl\n");
+    }
 	
 	printf("Hello World!\n");
 	sleep(5);
